@@ -1,7 +1,7 @@
 'use strict'
 
-const Type = require('lighter-type')
 const Emitter = require('lighter-emitter')
+const Type = Emitter._super
 const util = require('util')
 const bind = process.binding
 const Buffer = require('buffer').Buffer
