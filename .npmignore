@@ -1,0 +1,10 @@
+.cache
+.editorconfig
+.idea
+.jshintrc
+.log
+.npmignore
+.project
+.travis.yml
+.DS_Store
+coverage

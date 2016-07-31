@@ -1,0 +1,16 @@
+{
+  "standard": {
+    "globals": [
+      "describe",
+      "it",
+      "before",
+      "after",
+      "xdescribe",
+      "xit",
+      "is",
+      "mock",
+      "unmock",
+      "bench"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "lighter-tcp",
+  "version": "0.0.1",
+  "description": "A faster TCP server and client.",
+  "dependencies": {
+    "lighter-emitter": "1.2.0"
+  },
+  "devDependencies": {
+    "exam": ">=1.4.1 <2"
+  },
+  "keywords": [
+    "lighter",
+    "tcp"
+  ],
+  "main": "lighter-tcp.js",
+  "engines": {
+    "node": ">=0.10.40"
+  },
+  "scripts": {
+    "test": "./node_modules/exam/exam.js",
+    "cover": "./node_modules/exam/exam-cover.js",
+    "report": "open coverage/lcov-report/index.html",
+    "coveralls": "./node_modules/exam/exam-coveralls.js",
+    "bench": "./node_modules/exam/exam.js test/bench"
+  },
+  "repository": "https://github.com/lighterio/lighter-tcp.git",
+  "bugs": "https://github.com/lighterio/lighter-tcp/issues",
+  "homepage": "https://github.com/lighterio/lighter-tcp",
+  "author": "Sam Eubank <sameubank@gmail.com>",
+  "contributors": [
+    "Sam Eubank <sameubank@gmail.com>"
+  ],
+  "license": "ISC",
+  "standard": {
+    "globals": []
+  }
+}
