@@ -1,22 +1,22 @@
 'use strict'
 
-const Emitter = require('lighter-emitter')
-const Type = Emitter._super
-const util = require('util')
-const bind = process.binding
-const Buffer = require('buffer').Buffer
-const TcpWrap = bind('tcp_wrap')
-const Tcp = TcpWrap.TCP
-const TCPConnectWrap = TcpWrap.TCPConnectWrap
-const StreamWrap = bind('stream_wrap')
-const WriteWrap = StreamWrap.WriteWrap
-const dns = require('dns')
-const uv = bind('uv')
-const EOF = uv.UV_EOF
-const ECONNRESET = uv.UV_ECONNRESET
-const errnoException = util._errnoException
-const exceptionWithHostPort = util._exceptionWithHostPort
-const dnsOptions = {hints: dns.ADDRCONFIG}
+var Emitter = require('lighter-emitter')
+var Type = Emitter._super
+var util = require('util')
+var bind = process.binding
+var Buffer = require('buffer').Buffer
+var TcpWrap = bind('tcp_wrap')
+var Tcp = TcpWrap.TCP
+var TCPConnectWrap = TcpWrap.TCPConnectWrap
+var StreamWrap = bind('stream_wrap')
+var WriteWrap = StreamWrap.WriteWrap
+var dns = require('dns')
+var uv = bind('uv')
+var EOF = uv.UV_EOF
+var ECONNRESET = uv.UV_ECONNRESET
+var errnoException = util._errnoException
+var exceptionWithHostPort = util._exceptionWithHostPort
+var dnsOptions = {hints: dns.ADDRCONFIG}
 
 /* istanbul ignore next */
 if (!(process.platform in ['freebsd', 'android'])) {
@@ -190,7 +190,7 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
     }
     var port = this.port
 
-    const wrap = new TCPConnectWrap()
+    var wrap = new TCPConnectWrap()
     wrap.oncomplete = onComplete
     var error = (v === 4)
       ? this._handle.connect(wrap, ip, port)
