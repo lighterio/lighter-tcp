@@ -18,6 +18,7 @@ const errnoException = util._errnoException
 const exceptionWithHostPort = util._exceptionWithHostPort
 const dnsOptions = {hints: dns.ADDRCONFIG}
 
+/* istanbul ignore next */
 if (!(process.platform in ['freebsd', 'android'])) {
   dnsOptions.hints |= dns.V4MAPPED
 }
