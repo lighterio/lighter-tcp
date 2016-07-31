@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A faster TCP server and client.",
   "dependencies": {
-    "lighter-emitter": "1.2.0"
+    "lighter-emitter": "1.2.1"
   },
   "devDependencies": {
     "exam": ">=1.4.1 <2"
