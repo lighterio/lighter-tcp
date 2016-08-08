@@ -55,7 +55,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   _handle: noHandle,
 
   listen: function () {
-    var handle = new Tcp()
+    var handle = this._handle = new Tcp()
     var host = this.host
     var port = this.port
     var v = ipv(host)
@@ -74,8 +74,6 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     if (error) {
       return this.fail(error, 'listen')
     }
-
-    this._handle = handle
   },
 
   fail: function (error, action) {
@@ -106,13 +104,12 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
       }
     }
   }
-}, {
+})
 
-  Events: Type.extend(function TcpEvents () {}, {
-    error: function (error) {
-      throw error
-    }
-  })
+var Events = Type.extend(function TcpEvents () {}, {
+  error: function (error) {
+    throw error
+  }
 })
 
 var noHandle = {
@@ -187,6 +184,7 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
         return this.resolveIp()
       }
     }
+    this.ip = ip
     var port = this.port
 
     var wrap = new TCPConnectWrap()
@@ -211,6 +209,11 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   write: write,
   fail: Server.prototype.fail,
   close: Server.prototype.close
+})
+
+Type.decorate(Server, {
+  Events: Events,
+  Socket: Socket
 })
 
 function writeSoon (data) {
@@ -250,7 +253,7 @@ function onRead (n, buffer) {
 function getter (name, fn) {
   Object.defineProperty(Socket.prototype, name, {
     configurable: false,
-    enumerable: true,
+    enumerable: false,
     get: fn
   })
 }
@@ -304,5 +307,8 @@ function onConnection (error, handle) {
     return self.fail(errnoException(error, 'accept'))
   }
   self._connections++
-  self.emit('connection', new Socket({handle: handle, server: self}))
+  self.emit('connection', new self.constructor.Socket({
+    handle: handle,
+    server: self
+  }))
 }
