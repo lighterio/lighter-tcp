@@ -7,10 +7,12 @@ var bind = process.binding
 var Buffer = require('buffer').Buffer
 var TcpWrap = bind('tcp_wrap')
 var Tcp = TcpWrap.TCP
-var TCPConnectWrap = TcpWrap.TCPConnectWrap
+var TcpConnectWrap = TcpWrap.TCPConnectWrap
 var WriteWrap = bind('stream_wrap').WriteWrap
-var dns = require('dns')
 var uv = bind('uv')
+var dns = require('dns')
+var cluster = require('cluster')
+var isMaster = cluster.isMaster
 var EOF = uv.UV_EOF
 var ECONNRESET = uv.UV_ECONNRESET
 var errnoException = util._errnoException
@@ -30,7 +32,7 @@ exports.connect = function (options) {
   return new Socket(options)
 }
 
-exports.defaultHost = '::'
+exports.defaultHost = '0.0.0.0'
 exports.defaultPort = 8080
 
 var Server = exports.Server = Emitter.extend(function TcpServer (options) {
@@ -38,7 +40,6 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   this._events = this._events || new this.constructor.Events()
   this._connections = 0
   this.port = options.port || exports.defaultPort
-  this.host = options.host || exports.defaultHost
 
   if (options.connection) {
     this.on('connection', options.connection)
@@ -49,19 +50,48 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   if (options.error) {
     this.on('error', options.error)
   }
-  this.listen()
+  if (isMaster) {
+    this.listen()
+  } else {
+    this.cluster()
+  }
 }, {
 
   _handle: noHandle,
 
+  cluster: function () {
+    var self = this
+    cluster._getServer(this, {
+      address: null,
+      port: this.port,
+      addressType: 4,
+      flags: 0
+    }, function (error, handle) {
+      if (error === 0 && handle.getsockname) {
+        var out = {}
+        error = handle.getsockname(out)
+        if (error === 0 && self.port !== out.port) {
+          error = uv.UV_EADDRINUSE
+        }
+      }
+      if (error) {
+        self.fail(error, 'bind')
+      }
+      self._handle = handle
+      handle.onconnection = onConnection
+      handle.owner = self
+
+      error = handle.listen()
+      if (error) {
+        return this.fail(error, 'listen')
+      }
+    })
+  },
+
   listen: function () {
-    var handle = this._handle = new Tcp()
-    var host = this.host
     var port = this.port
-    var v = ipv(host)
-    var error = (v === 6)
-      ? handle.bind6(host, port)
-      : handle.bind(host, port)
+    var handle = this._handle = new Tcp()
+    var error = handle.bind('127.0.0.1', port)
 
     if (error) {
       return this.fail(error, 'bind')
@@ -78,7 +108,8 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
 
   fail: function (error, action) {
     if (action) {
-      error = exceptionWithHostPort(error, action, this.host, this.port)
+      var host = this.host || exports.defaultHost
+      error = exceptionWithHostPort(error, action, host, this.port)
     }
     this.emit('error', error)
     this.close()
@@ -187,7 +218,7 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
     this.ip = ip
     var port = this.port
 
-    var wrap = new TCPConnectWrap()
+    var wrap = new TcpConnectWrap()
     wrap.oncomplete = onComplete
     var error = (v === 4)
       ? this._handle.connect(wrap, ip, port)

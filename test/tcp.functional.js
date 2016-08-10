@@ -43,10 +43,6 @@ describe('TCP', function () {
     })
   }
 
-  it('works on "::"', function (done) {
-    connect('::', done)
-  })
-
   it('works on 127.0.0.1', function (done) {
     connect('127.0.0.1', done)
   })
