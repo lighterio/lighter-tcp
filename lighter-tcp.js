@@ -11,6 +11,7 @@ var TcpConnectWrap = TcpWrap.TCPConnectWrap
 var WriteWrap = bind('stream_wrap').WriteWrap
 var uv = bind('uv')
 var dns = require('dns')
+var net = require('net')
 var cluster = require('cluster')
 var isMaster = cluster.isMaster
 var EOF = uv.UV_EOF
@@ -50,48 +51,22 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   if (options.error) {
     this.on('error', options.error)
   }
-  if (isMaster) {
-    this.listen()
-  } else {
-    this.cluster()
+  if (options !== 0) {
+    this._listen()
   }
 }, {
 
   _handle: noHandle,
 
-  cluster: function () {
-    var self = this
-    cluster._getServer(this, {
-      address: null,
-      port: this.port,
-      addressType: 4,
-      flags: 0
-    }, function (error, handle) {
-      if (error === 0 && handle.getsockname) {
-        var out = {}
-        error = handle.getsockname(out)
-        if (error === 0 && self.port !== out.port) {
-          error = uv.UV_EADDRINUSE
-        }
-      }
-      if (error) {
-        self.fail(error, 'bind')
-      }
-      self._handle = handle
-      handle.onconnection = onConnection
-      handle.owner = self
-
-      error = handle.listen()
-      if (error) {
-        return this.fail(error, 'listen')
-      }
-    })
+  listen: function (port) {
+    this.port = port
+    this._listen()
   },
 
-  listen: function () {
+  _listen: function () {
     var port = this.port
     var handle = this._handle = new Tcp()
-    var error = handle.bind('127.0.0.1', port)
+    var error = handle.bind(exports.defaultHost, port)
 
     if (error) {
       return this.fail(error, 'bind')
@@ -342,4 +317,50 @@ function onConnection (error, handle) {
     handle: handle,
     server: self
   }))
+}
+
+if (isMaster) {
+  // FIXME: Overriding net.createServer with a TCP-only implementation will
+  // non-TCP sockets to break.
+  net.createServer = function () {
+    return new MasterServer(0)
+  }
+  var once = Server.prototype.once
+  var MasterServer = Server.extend(function () {
+    Server.apply(this, arguments)
+  }, {
+    once: function (type, fn) {
+      fn()
+      this.once = once
+    }
+  })
+} else {
+  Server.prototype._listen = function clusterListen () {
+    var self = this
+    cluster._getServer(this, {
+      address: null,
+      port: this.port,
+      addressType: 4,
+      flags: 0
+    }, function (error, handle) {
+      if (error === 0 && handle.getsockname) {
+        var out = {}
+        error = handle.getsockname(out)
+        if (error === 0 && self.port !== out.port) {
+          error = uv.UV_EADDRINUSE
+        }
+      }
+      if (error) {
+        self.fail(error, 'bind')
+      }
+      self._handle = handle
+      handle.onconnection = onConnection
+      handle.owner = self
+
+      error = handle.listen()
+      if (error) {
+        return this.fail(error, 'listen')
+      }
+    })
+  }
 }
