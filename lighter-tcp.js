@@ -13,7 +13,6 @@ var uv = bind('uv')
 var dns = require('dns')
 var net = require('net')
 var cluster = require('cluster')
-var isMaster = cluster.isMaster
 var EOF = uv.UV_EOF
 var ECONNRESET = uv.UV_ECONNRESET
 var errnoException = util._errnoException
@@ -25,11 +24,11 @@ if (!(process.platform in ['freebsd', 'android'])) {
   dnsOptions.hints |= dns.V4MAPPED
 }
 
-exports.serve = function (options) {
+exports.serve = function serve (options) {
   return new Server(options)
 }
 
-exports.connect = function (options) {
+exports.connect = function connect (options) {
   return new Socket(options)
 }
 
@@ -52,18 +51,22 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     this.on('error', options.error)
   }
   if (options !== 0) {
-    this._listen()
+    if (options.isWorker) {
+      this._work()
+    } else {
+      this._listen()
+    }
   }
 }, {
 
   _handle: noHandle,
 
-  listen: function (port) {
+  listen: function listen (port) {
     this.port = port
     this._listen()
   },
 
-  _listen: function () {
+  _listen: function _listen () {
     var port = this.port
     var handle = this._handle = new Tcp()
     var error = handle.bind(exports.defaultHost, port)
@@ -81,7 +84,36 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     }
   },
 
-  fail: function (error, action) {
+  _work: function _work () {
+    var self = this
+    cluster._getServer(this, {
+      address: null,
+      port: this.port,
+      addressType: 4,
+      flags: 0
+    }, function (error, handle) {
+      if (error === 0 && handle.getsockname) {
+        var out = {}
+        error = handle.getsockname(out)
+        if (error === 0 && self.port !== out.port) {
+          error = uv.UV_EADDRINUSE
+        }
+      }
+      if (error) {
+        self.fail(error, 'bind')
+      }
+      self._handle = handle
+      handle.onconnection = onConnection
+      handle.owner = self
+
+      error = handle.listen()
+      if (error) {
+        return this.fail(error, 'listen')
+      }
+    })
+  },
+
+  fail: function fail (error, action) {
     if (action) {
       var host = this.host || exports.defaultHost
       error = exceptionWithHostPort(error, action, host, this.port)
@@ -90,7 +122,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     this.close()
   },
 
-  close: function (fn) {
+  close: function close (fn) {
     var self = this
     var handle = this._handle
     handle.close(function () {
@@ -163,12 +195,12 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   }
 }, {
 
-  setKeepAlive: function (setting, msecs) {
+  setKeepAlive: function setKeepAlive (setting, msecs) {
     this._handle.setKeepAlive(setting, ~~(msecs / 1000))
     return this
   },
 
-  resolveIp: function () {
+  resolveIp: function resolveIp () {
     var self = this
     var host = this.host
     var port = this.port
@@ -182,7 +214,7 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
     })
   },
 
-  connect: function (ip, v) {
+  connect: function connect (ip, v) {
     if (!ip) {
       ip = this.host
       v = ipv(ip)
@@ -208,8 +240,9 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   open: function open () {
     var error = this._handle.readStart()
     if (error) {
-      this.fail(errnoException(error, 'open'))
+      return this.fail(errnoException(error, 'open'))
     }
+    this.emit('connect')
   },
 
   write: write,
@@ -301,7 +334,6 @@ function onComplete (status, handle) {
   if (status === 0) {
     self.write = write
     self.open()
-    self.emit('connect')
   } else {
     self.fail(exceptionWithHostPort(status, 'connect', self.host, self.port))
   }
@@ -319,9 +351,9 @@ function onConnection (error, handle) {
   }))
 }
 
-if (isMaster) {
-  // FIXME: Overriding net.createServer with a TCP-only implementation will
-  // non-TCP sockets to break.
+// FIXME: Overriding net.createServer with a TCP-only implementation will
+// non-TCP sockets to break.
+if (process.isLighterTcpMaster) {
   net.createServer = function () {
     return new MasterServer(0)
   }
@@ -334,33 +366,4 @@ if (isMaster) {
       this.once = once
     }
   })
-} else {
-  Server.prototype._listen = function clusterListen () {
-    var self = this
-    cluster._getServer(this, {
-      address: null,
-      port: this.port,
-      addressType: 4,
-      flags: 0
-    }, function (error, handle) {
-      if (error === 0 && handle.getsockname) {
-        var out = {}
-        error = handle.getsockname(out)
-        if (error === 0 && self.port !== out.port) {
-          error = uv.UV_EADDRINUSE
-        }
-      }
-      if (error) {
-        self.fail(error, 'bind')
-      }
-      self._handle = handle
-      handle.onconnection = onConnection
-      handle.owner = self
-
-      error = handle.listen()
-      if (error) {
-        return this.fail(error, 'listen')
-      }
-    })
-  }
 }
