@@ -1,3 +1,8 @@
+'use strict'
+
+// Support mocha.
+var bench = global.bench || function () {}
+
 const isIP = process.binding('cares_wrap').isIP
 
 function ipVersion (ip) {

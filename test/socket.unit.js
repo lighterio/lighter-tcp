@@ -1,3 +1,8 @@
+'use strict'
+
+// Support mocha.
+var is = global.is || require('exam/lib/is')
+
 var tcp = require('../lighter-tcp')
 var port = 9895
 
@@ -7,6 +12,10 @@ var server = tcp.serve({
 
 describe('Socket.prototype', function () {
   var host = {port: port, host: 'localhost'}
+
+  after(function (done) {
+    server.close(done)
+  })
 
   describe('.local', function () {
     it('returns zero until connected', function (done) {

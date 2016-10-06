@@ -37,7 +37,7 @@ exports.defaultPort = 8080
 
 var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   options = options || 0
-  this._events = this._events || new this.constructor.Events()
+  this._events = new this.constructor.Events()
   this._connections = 0
   this.port = options.port || exports.defaultPort
 
@@ -170,8 +170,7 @@ function no () {}
 
 var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   options = options || 0
-  this._events = new Server.Events()
-  this.ip = ''
+  this._events = new this.constructor.Events()
   this.host = options.host || exports.defaultHost
   this.port = options.port || exports.defaultPort
 
@@ -253,6 +252,10 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
 Type.decorate(Server, {
   Events: Events,
   Socket: Socket
+})
+
+Type.decorate(Socket, {
+  Events: Events
 })
 
 function writeSoon (data) {
