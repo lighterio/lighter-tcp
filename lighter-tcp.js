@@ -50,12 +50,10 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   if (options.error) {
     this.on('error', options.error)
   }
-  if (options !== 0) {
-    if (options.isWorker) {
-      this._work()
-    } else {
-      this._listen()
-    }
+  if (cluster._getServer) {
+    this._work()
+  } else {
+    this._listen()
   }
 }, {
 
@@ -88,7 +86,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     var self = this
     cluster._getServer(this, {
       address: null,
-      port: this.port,
+      port: this.port + cluster.worker.id,
       addressType: 4,
       flags: 0
     }, function (error, handle) {
@@ -267,9 +265,18 @@ function writeSoon (data) {
 function write (data) {
   var handle = this._handle
   var writer = this.writer || new WriteWrap()
+  var error
   writer.handle = handle
   writer.async = false
-  var error
+
+  // Write headers first if necessary.
+  if (this._headerSent === false) {
+    var header = this._getHeader()
+    handle.writeUtf8String(writer, header)
+    this._headerSent = true
+  }
+
+  // Write data.
   if (data instanceof Buffer) {
     error = handle.writeBuffer(writer, data)
   } else {
