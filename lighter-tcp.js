@@ -86,7 +86,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
     var self = this
     cluster._getServer(this, {
       address: null,
-      port: this.port + cluster.worker.id,
+      port: this.port,
       addressType: 4,
       flags: 0
     }, function (error, handle) {
