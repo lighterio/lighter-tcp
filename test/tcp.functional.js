@@ -40,11 +40,10 @@ describe('TCP', function () {
   function connect (host, done) {
     var socket = tcp.connect({
       port: port,
-      host: host,
-      data: function (chunk) {
-        is(chunk.toString(), 'Hi!')
-        socket.close(done)
-      }
+      host: host
+    }).on('data', function (chunk) {
+      is(chunk.toString(), 'Hi!')
+      socket.close(done)
     })
   }
 

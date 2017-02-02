@@ -27,16 +27,15 @@ describe('Socket.prototype', function () {
 
     it('returns local socket info', function (done) {
       tcp.connect({
-        port: port,
-        connect: function () {
-          var local = this.local
-          is.string(local.address)
-          is.number(local.port)
-          local = this.local
-          is.string(local.address)
-          is.number(local.port)
-          this.close(done)
-        }
+        port: port
+      }).on('connect', function () {
+        var local = this.local
+        is.string(local.address)
+        is.number(local.port)
+        local = this.local
+        is.string(local.address)
+        is.number(local.port)
+        this.close(done)
       })
     })
   })
@@ -51,16 +50,15 @@ describe('Socket.prototype', function () {
 
     it('returns remote socket info', function (done) {
       tcp.connect({
-        port: port,
-        connect: function () {
-          var remote = this.remote
-          is.string(remote.address)
-          is.number(remote.port)
-          remote = this.remote
-          is.string(remote.address)
-          is.number(remote.port)
-          this.close(done)
-        }
+        port: port
+      }).on('connect', function () {
+        var remote = this.remote
+        is.string(remote.address)
+        is.number(remote.port)
+        remote = this.remote
+        is.string(remote.address)
+        is.number(remote.port)
+        this.close(done)
       })
     })
   })

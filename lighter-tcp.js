@@ -44,12 +44,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   if (options.connection) {
     this.on('connection', options.connection)
   }
-  if (options.data) {
-    this.on('data', options.data)
-  }
-  if (options.error) {
-    this.on('error', options.error)
-  }
+
   if (cluster._getServer) {
     this._work()
   } else {
@@ -106,7 +101,7 @@ var Server = exports.Server = Emitter.extend(function TcpServer (options) {
 
       error = handle.listen()
       if (error) {
-        return this.fail(error, 'listen')
+        return self.fail(error, 'listen')
       }
     })
   },
@@ -176,13 +171,6 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   handle.owner = this
   handle.onread = onRead
 
-  if (options.data) {
-    this.on('data', options.data)
-  }
-  if (options.connect) {
-    this.on('connect', options.connect)
-  }
-
   var server = this.server = options.server || null
   if (server) {
     this.open()
@@ -191,7 +179,6 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
     this.connect()
   }
 }, {
-
   setKeepAlive: function setKeepAlive (setting, msecs) {
     this._handle.setKeepAlive(setting, ~~(msecs / 1000))
     return this
@@ -269,13 +256,6 @@ function write (data) {
   writer.handle = handle
   writer.async = false
 
-  // Write headers first if necessary.
-  if (this._headerSent === false) {
-    var header = this._getHeader()
-    handle.writeUtf8String(writer, header)
-    this._headerSent = true
-  }
-
   // Write data.
   if (data instanceof Buffer) {
     error = handle.writeBuffer(writer, data)
@@ -333,7 +313,7 @@ function ipv (ip) {
   if (ip.indexOf(':') > -1) {
     return 6
   }
-  if (/^[0-9\.]+$/.test(ip)) {
+  if (/^[0-9.]+$/.test(ip)) {
     return 4
   }
   return 0
@@ -361,8 +341,8 @@ function onConnection (error, handle) {
   }))
 }
 
-// FIXME: Overriding net.createServer with a TCP-only implementation will
-// non-TCP sockets to break.
+// FIXME: Overriding net.createServer with a TCP-only implementation
+// causes non-TCP sockets to break.
 if (process.isLighterTcpMaster) {
   net.createServer = function () {
     return new MasterServer(0)
