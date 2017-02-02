@@ -1,6 +1,6 @@
 {
   "name": "lighter-tcp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A faster TCP server and client.",
   "dependencies": {
     "lighter-emitter": "^1.2.1"
