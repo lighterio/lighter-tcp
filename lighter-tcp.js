@@ -37,7 +37,7 @@ exports.defaultPort = 8080
 
 var Server = exports.Server = Emitter.extend(function TcpServer (options) {
   options = options || 0
-  this._events = new this.constructor.Events()
+  this._events = new this.Events()
   this._connections = 0
   this.port = options.port || exports.defaultPort
 
@@ -163,7 +163,7 @@ function no () {}
 
 var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   options = options || 0
-  this._events = new this.constructor.Events()
+  this._events = new this.Events()
   this.host = options.host || exports.defaultHost
   this.port = options.port || exports.defaultPort
 
@@ -234,14 +234,9 @@ var Socket = exports.Socket = Emitter.extend(function Socket (options) {
   close: Server.prototype.close
 })
 
-Type.decorate(Server, {
-  Events: Events,
-  Socket: Socket
-})
-
-Type.decorate(Socket, {
-  Events: Events
-})
+Server.prototype.Events = Events
+Server.prototype.Socket = Socket
+Socket.prototype.Events = Events
 
 function writeSoon (data) {
   return this.once('connect', function () {
@@ -335,7 +330,7 @@ function onConnection (error, handle) {
     return self.fail(errnoException(error, 'accept'))
   }
   self._connections++
-  self.emit('connection', new self.constructor.Socket({
+  self.emit('connection', new self.Socket({
     handle: handle,
     server: self
   }))

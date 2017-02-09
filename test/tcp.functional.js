@@ -33,9 +33,12 @@ describe('TCP', function () {
   })
 
   var port = 9898
-  var server = tcp.serve({port: port, connection: function (socket) {
-    socket.write('Hi!')
-  }})
+  var server = tcp.serve({
+    port: port,
+    connection: function (socket) {
+      socket.write('Hi!')
+    }
+  })
 
   function connect (host, done) {
     var socket = tcp.connect({
